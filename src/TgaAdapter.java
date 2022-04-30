@@ -1,10 +1,6 @@
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 public class TgaAdapter {
   public static int height;
@@ -13,36 +9,35 @@ public class TgaAdapter {
   public static Pixel[][] img;
   private static byte[] file;
 
-  //private int footerSize = 26; // bytes
-
-  private static int headerSize = 18; // bytes
-  private static int[] widthBytes = {12, 13};
-  private static int[] heightBytes = {14, 15};
+  // TGA format
+  private static final  int headerSize = 18; // bytes
+  private static final int[] widthBytes = {12, 13};
+  private static final int[] heightBytes = {14, 15};
 
   public static void init(String path) throws IOException {
     file = Files.readAllBytes(Paths.get(path));
-    //checkFooter(file);
-
     width = (unsignedByte(file[widthBytes[1]]) << 8) | unsignedByte(file[widthBytes[0]]);
     height = (unsignedByte(file[heightBytes[1]]) << 8) | unsignedByte(file[heightBytes[0]]);
-
     readImg();
+
+    //printHeader(file);
   }
 
   public static void readImg() {
     img = new Pixel[height][width];
     int fileIt = headerSize;
-    byte r, g, b;
+    int r, g, b;
     for(int i = 0; i < height; i++)
       for(int j = 0; j < width; j++) {
-        r = file[fileIt++];
-        g = file[fileIt++];
-        b = file[fileIt++];
-        img[i][j] = new Pixel(r, g, b);
+        b = unsignedByte(file[fileIt++]);
+        g = unsignedByte(file[fileIt++]);
+        r = unsignedByte(file[fileIt++]);
+        img[height - i - 1][j] = new Pixel(r, g, b); // images from tests start at bottom-left (can be checked in header)
       }
   }
 
-  public void printHeader(byte[] file) {
+  // just for debugging
+  public static void printHeader(byte[] file) {
     System.out.println("header:");
     System.out.println(file[0]);
     System.out.println(file[1]);
@@ -53,20 +48,22 @@ public class TgaAdapter {
     System.out.print(((file[13] << 8 & 0xff00) | (file[12]& 0x00ff))+", ");
     System.out.print(((file[15] << 8 & 0xff00) | (file[14]& 0x00ff))+", ");
     System.out.println(file[16] +", "+file[17]);
+
+    System.out.println("pierwszy pixel:" + img[0][0].R + " " + img[0][0].G + " " + img[0][0].B);
+    System.out.println("drugi pixel:" + img[0][1].R + " " + img[0][1].G + " " + img[0][1].B);
+
+    System.out.println("ostatni w 2 rz pixel:" + img[0][width-1].R + " " + img[0][width-1].G + " " + img[0][width-1].B);
+
+    System.out.println("ostatni pixel:" + img[height-1][width-1].R + " " + img[height-1][width-1].G + " " + img[height-1][width-1].B);
+    System.out.println("przedostatni pixel:" + img[height-1][width-2].R + " " + img[height-1][width-2].G + " " + img[height-1][width-2].B);
   }
 
   private static int unsignedByte(byte b) {
-    int w = b;
-    if(w < 0) w += 256;
-    return w;
+    return b & 0xFF;
   }
 
-  /*private void checkFooter(byte[] file) {
-    if(file[file.length-2] != 46 || file[file.length-1] != 0) footerSize = 0;
-  }*/
-
   public static Pixel getPixel(int i, int j) {
-    if(i < 0 || j < 0 || i > height || j > width) return new Pixel((byte)0, (byte)0, (byte)0);
+    if(i < 0 || j < 0 || i > height || j > width) return new Pixel(0, 0, 0);
     else return img[i][j];
   }
 

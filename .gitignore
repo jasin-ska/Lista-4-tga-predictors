@@ -1,0 +1,6 @@
+
+*.class
+*.xml
+.idea/vcs.xml
+.idea/runConfigurations.xml
+*.class
